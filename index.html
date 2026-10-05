@@ -1,0 +1,2919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Johannesburg Real Estate Digital Twin</title>
+
+    <!--CesiumJS-->
+    <script src="https://cesium.com/downloads/cesiumjs/releases/1.139/Build/Cesium/Cesium.js"></script>
+
+    <link
+        href="https://cesium.com/downloads/cesiumjs/releases/1.139/Build/Cesium/Widgets/widgets.css"
+        rel="stylesheet"
+    >
+
+    <style>
+    html,
+body {
+    margin: 0;
+    padding: 0;
+
+    background: #f4f0e6;
+
+    color: #292722;
+}
+
+#mapStage {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 74px);
+    overflow: hidden;
+    background: #e8e3d8;
+}
+
+#cesiumContainer {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+/* Fullscreen map */
+#mapStage:fullscreen {
+    width: 100vw;
+    height: 100vh;
+}
+
+#mapStage:-webkit-full-screen {
+    width: 100vw;
+    height: 100vh;
+}
+
+/* Keep map controls visible in fullscreen */
+#mapStage:fullscreen #mapControls {
+    position: fixed;
+    top: 220px;
+    right: 18px;
+    z-index: 99999;
+}
+
+#mapStage:-webkit-full-screen #mapControls {
+    position: fixed;
+    top: 220px;
+    right: 18px;
+    z-index: 99999;
+}
+
+    /* Newspaper masthead */
+    #masthead {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 74px;
+
+        background: rgba(248, 245, 237, 0.96);
+
+        border-bottom: 1px solid #9d978b;
+
+        z-index: 20;
+
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+
+        padding: 0 28px;
+        box-sizing: border-box;
+    }
+
+    #masthead h1 {
+        margin: 0;
+        font-size: 27px;
+        font-weight: normal;
+        letter-spacing: -0.5px;
+    }
+
+    #masthead .edition {
+        font-family: Arial, sans-serif;
+        font-size: 10px;
+        letter-spacing: 2px;
+        text-transform: uppercase;
+        color: #6d685e;
+    }
+
+    /* Building information card */
+    #buildingInfo {
+    position: absolute;
+
+    top: 94px;
+    right: 24px;
+
+    width: 270px;
+
+    padding: 18px;
+
+    box-sizing: border-box;
+
+    background: rgba(248, 245, 237, 0.94);
+
+    border: 1px solid #aaa397;
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+
+    box-shadow: 0 5px 18px rgba(60, 55, 45, 0.10);
+
+    z-index: 200;
+
+    display: none;
+}
+#buildingInfo h2 {
+    margin: 5px 0 15px;
+
+    padding-bottom: 10px;
+
+    border-bottom: 1px solid #aaa397;
+
+    font-size: 20px;
+    font-weight: normal;
+}
+
+.property-details p {
+    display: flex;
+    justify-content: space-between;
+    gap: 20px;
+
+    margin: 10px 0;
+
+    font-size: 12px;
+}
+
+.property-details span {
+    color: #777166;
+}
+
+.property-details strong {
+    font-weight: normal;
+
+    text-align: right;
+}#propertyEnquiry {
+    width: 100%;
+
+    margin-top: 10px;
+    padding: 9px;
+
+    border: 1px solid #aaa397;
+
+    background: #e7e1d5;
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 12px;
+
+    cursor: pointer;
+}
+
+#propertyEnquiry:hover {
+    background: #d9d1c2;
+}
+
+    #buildingInfo p {
+        margin: 10px 0;
+
+        font-size: 14px;
+        line-height: 1.4;
+    }
+
+    #buildingInfo p::first-line {
+        color: #4e4a42;
+    }
+#closeBuildingInfo {
+    position: absolute;
+    top: 8px;
+    right: 9px;
+
+    width: 24px;
+    height: 24px;
+
+    padding: 0;
+
+    border: none;
+    background: transparent;
+
+    color: #777166;
+
+    font-family: Arial, sans-serif;
+    font-size: 18px;
+    line-height: 24px;
+
+    cursor: pointer;
+}
+
+#closeBuildingInfo:hover {
+    color: #292722;
+}
+    /* Small newspaper label */
+    .section-label {
+        font-family: Arial, sans-serif;
+        font-size: 9px;
+        letter-spacing: 1.8px;
+        text-transform: uppercase;
+        color: #777166;
+    }
+
+    /* Enquiry processing panel */
+#enquiryResult {
+    position: absolute;
+
+    top: 94px;
+    right: 24px;
+
+    width: 300px;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    background: rgba(248, 245, 237, 0.97);
+
+    border: 1px solid #aaa397;
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+
+    box-shadow: 0 6px 22px rgba(60, 55, 45, 0.12);
+
+    z-index: 300;
+
+    display: none;
+}
+
+#enquiryResult h2 {
+    margin: 5px 0 18px;
+
+    padding-bottom: 11px;
+
+    border-bottom: 1px solid #aaa397;
+
+    font-size: 21px;
+
+    font-weight: normal;
+}
+
+/* Property enquiry form */
+#enquiryForm {
+    position: absolute;
+
+    top: 94px;
+    right: 24px;
+
+    width: 300px;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    background: rgba(248, 245, 237, 0.97);
+
+    border: 1px solid #aaa397;
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+
+    box-shadow: 0 6px 22px rgba(60, 55, 45, 0.12);
+
+    z-index: 350;
+
+    display: none;
+}
+
+#enquiryForm h2 {
+    margin: 5px 0 18px;
+
+    padding-bottom: 11px;
+
+    border-bottom: 1px solid #aaa397;
+
+    font-size: 21px;
+
+    font-weight: normal;
+}
+
+#closeEnquiryForm {
+    position: absolute;
+
+    top: 8px;
+    right: 9px;
+
+    width: 24px;
+    height: 24px;
+
+    padding: 0;
+
+    border: none;
+
+    background: transparent;
+
+    color: #777166;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 18px;
+
+    line-height: 24px;
+
+    cursor: pointer;
+}
+
+#closeEnquiryForm:hover {
+    color: #292722;
+}
+
+.enquiry-form-property {
+    margin-bottom: 15px;
+}
+
+.enquiry-form-property span {
+    display: block;
+
+    margin-bottom: 5px;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 8px;
+
+    letter-spacing: 1.5px;
+
+    text-transform: uppercase;
+
+    color: #777166;
+}
+
+.enquiry-form-property strong {
+    font-size: 14px;
+
+    font-weight: normal;
+
+    color: #292722;
+}
+
+#enquiryText {
+    width: 100%;
+
+    min-height: 100px;
+
+    padding: 10px;
+
+    box-sizing: border-box;
+
+    resize: vertical;
+
+    border: 1px solid #aaa397;
+
+    background: rgba(255, 253, 248, 0.8);
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+
+    outline: none;
+}
+
+#enquiryText::placeholder {
+    color: #777166;
+}
+
+#enquiryText:focus {
+    border-color: #777166;
+}
+
+#submitEnquiry {
+    width: 100%;
+
+    margin-top: 14px;
+
+    padding: 9px;
+
+    border: 1px solid #aaa397;
+
+    background: #e7e1d5;
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+
+    font-size: 12px;
+
+    cursor: pointer;
+}
+
+#submitEnquiry:hover {
+    background: #d9d1c2;
+}
+
+/* Newspaper notification */
+#notificationPanel {
+    position: absolute;
+
+    top: 94px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    width: 360px;
+
+    padding: 20px;
+
+    box-sizing: border-box;
+
+    background: rgba(248, 245, 237, 0.97);
+
+    border: 1px solid #aaa397;
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+
+    box-shadow: 0 6px 22px rgba(60, 55, 45, 0.12);
+
+    z-index: 400;
+
+    display: none;
+}
+
+#notificationPanel h2 {
+    margin: 5px 0 14px;
+
+    padding-bottom: 11px;
+
+    border-bottom: 1px solid #aaa397;
+
+    font-size: 20px;
+
+    font-weight: normal;
+}
+
+#closeNotification {
+    position: absolute;
+
+    top: 8px;
+    right: 9px;
+
+    width: 24px;
+    height: 24px;
+
+    padding: 0;
+
+    border: none;
+
+    background: transparent;
+
+    color: #777166;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 18px;
+
+    line-height: 24px;
+
+    cursor: pointer;
+}
+
+#closeNotification:hover {
+    color: #292722;
+}
+
+#notificationMessage {
+    margin: 0;
+
+    font-size: 12px;
+
+    line-height: 1.55;
+
+    color: #4e4a42;
+}
+
+#notificationButton {
+    width: 100%;
+
+    margin-top: 17px;
+
+    padding: 9px;
+
+    border: 1px solid #aaa397;
+
+    background: #e7e1d5;
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+
+    font-size: 12px;
+
+    cursor: pointer;
+}
+
+#notificationButton:hover {
+    background: #d9d1c2;
+}
+
+#closeEnquiryResult {
+    position: absolute;
+
+    top: 8px;
+    right: 9px;
+
+    width: 24px;
+    height: 24px;
+
+    padding: 0;
+
+    border: none;
+
+    background: transparent;
+
+    color: #777166;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 18px;
+
+    line-height: 24px;
+
+    cursor: pointer;
+}
+
+#closeEnquiryResult:hover {
+    color: #292722;
+}
+
+.enquiry-property {
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 5px;
+
+    margin-bottom: 14px;
+}
+
+.enquiry-property span {
+    font-family: Arial, sans-serif;
+
+    font-size: 8px;
+
+    letter-spacing: 1.5px;
+
+    text-transform: uppercase;
+
+    color: #777166;
+}
+
+.enquiry-property strong {
+    font-size: 14px;
+
+    font-weight: normal;
+
+    color: #292722;
+}
+
+.enquiry-rule {
+    width: 100%;
+
+    height: 1px;
+
+    margin-bottom: 14px;
+
+    background: #aaa397;
+}
+
+.result-row {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: baseline;
+
+    gap: 20px;
+
+    margin: 11px 0;
+
+    font-size: 12px;
+}
+
+.result-row span {
+    color: #777166;
+}
+
+.result-row strong {
+    font-weight: normal;
+
+    text-align: right;
+
+    color: #292722;
+}
+
+.result-next-action {
+    margin-top: 17px;
+
+    padding-top: 13px;
+
+    border-top: 1px solid #aaa397;
+}
+
+.next-action-label {
+    margin-bottom: 6px;
+
+    font-family: Arial, sans-serif;
+
+    font-size: 8px;
+
+    letter-spacing: 1.5px;
+
+    text-transform: uppercase;
+
+    color: #777166;
+}
+
+.result-next-action p {
+    margin: 0;
+
+    font-size: 12px;
+
+    line-height: 1.5;
+
+    color: #4e4a42;
+}
+
+#closeResultButton {
+    width: 100%;
+
+    margin-top: 17px;
+
+    padding: 9px;
+
+    border: 1px solid #aaa397;
+
+    background: #e7e1d5;
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+
+    font-size: 12px;
+
+    cursor: pointer;
+}
+
+#closeResultButton:hover {
+    background: #d9d1c2;
+}
+
+    #navigationGuide {
+    position: absolute;
+    left: 24px;
+    top: 94px;
+
+    padding: 8px 12px;
+
+    background: rgba(248, 245, 237, 0.72);
+    border: 1px solid rgba(170, 163, 151, 0.55);
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+
+    z-index: 10;
+
+    box-shadow: 0 3px 12px rgba(60, 55, 45, 0.06);
+
+    backdrop-filter: blur(3px);
+}
+
+.guide-label {
+    display: inline-block;
+
+    margin-right: 12px;
+
+    font-family: Arial, sans-serif;
+    font-size: 8px;
+    letter-spacing: 1.7px;
+    text-transform: uppercase;
+
+    color: #777166;
+}
+
+.guide-items {
+    display: inline-flex;
+    align-items: center;
+    gap: 13px;
+}
+
+.guide-item {
+    margin: 0;
+
+    font-size: 11px;
+    line-height: 1.2;
+
+    white-space: nowrap;
+
+    color: #4e4a42;
+}
+
+.guide-item strong {
+    font-weight: normal;
+    color: #292722;
+}
+
+#mapControls {
+    position: absolute;
+
+    top: 220px;
+    right: 10px;
+
+    display: flex;
+    flex-direction: column;
+
+    z-index: 9999;
+
+    background: rgba(248, 245, 237, 0.68);
+
+    border: 1px solid rgba(170, 163, 151, 0.55);
+
+    box-shadow: 0 3px 12px rgba(60, 55, 45, 0.07);
+
+    backdrop-filter: blur(3px);
+}
+
+#mapControls button {
+    position: relative;
+
+    width: 30px;
+    height: 30px;
+
+    padding: 0;
+
+    border: 0;
+    border-bottom: 1px solid rgba(170, 163, 151, 0.45);
+
+    background: transparent;
+
+    color: #4e4a42;
+
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 15px;
+
+    cursor: pointer;
+
+    z-index: 10000;
+
+    transition:
+        background 0.15s ease,
+        color 0.15s ease;
+}
+
+#mapControls button:last-child {
+    border-bottom: none;
+}
+
+#mapControls button:hover {
+    background: rgba(231, 225, 213, 0.8);
+    color: #292722;
+}
+
+#mapControls button:active {
+    background: rgba(217, 209, 194, 0.9);
+}
+
+#fullscreenMap {
+    margin-top: 4px !important;
+    border-top: 1px solid rgba(170, 163, 151, 0.55) !important;
+}
+#locationSearch {
+    position: absolute;
+
+    top: 94px;
+    left: 50%;
+
+    transform: translateX(-50%);
+
+    display: flex;
+
+    z-index: 20;
+}
+
+#searchInput {
+    width: 260px;
+    height: 38px;
+
+    padding: 0 12px;
+
+    box-sizing: border-box;
+
+    border: 1px solid #aaa397;
+    border-right: none;
+
+    background: rgba(248, 245, 237, 0.94);
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 14px;
+
+    outline: none;
+}
+
+#searchInput::placeholder {
+    color: #777166;
+}
+
+#searchButton {
+    height: 38px;
+
+    padding: 0 16px;
+
+    border: 1px solid #aaa397;
+
+    background: #e7e1d5;
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+    font-size: 13px;
+
+    cursor: pointer;
+}
+
+#searchButton:hover {
+    background: #d9d1c2;
+}
+
+
+
+
+/* =========================================
+   REAL-ESTATE OPERATIONS WORKFLOW
+========================================= */
+
+#workflowSection {
+    position: relative;
+    width: 100%;
+    min-height: 430px;
+
+    padding: 55px 24px 70px;
+    box-sizing: border-box;
+
+    overflow: hidden;
+
+    background: #f3efe6;
+
+    border-top: 1px solid #aaa397;
+
+    color: #292722;
+
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+#workflowParticles {
+    position: absolute;
+    inset: 0;
+
+    width: 100%;
+    height: 100%;
+
+    z-index: 0;
+
+    pointer-events: none;
+}
+
+#workflowSection .workflow-heading,
+#workflowSection .workflow-list,
+#workflowSection .workflow-evidence {
+    position: relative;
+    z-index: 2;
+}
+
+.workflow-heading {
+    margin-bottom: 32px;
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: #6d685e;
+}
+
+.workflow-heading span {
+    display: block;
+    margin-top: 7px;
+    font-size: 9px;
+    letter-spacing: 0.4px;
+    text-transform: none;
+    color: #8a8479;
+}
+
+.workflow-list {
+    width: 420px;
+    max-width: 100%;
+}
+
+.workflow-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    cursor: pointer;
+    transition: transform 0.2s ease, opacity 0.2s ease;
+}
+
+.workflow-item:hover {
+    transform: translateX(4px);
+}
+
+.workflow-item.active {
+    transform: translateX(4px);
+}
+
+.workflow-number {
+    flex: 0 0 32px;
+
+    padding-top: 3px;
+
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    letter-spacing: 1px;
+
+    color: #777166;
+}
+
+.workflow-content {
+    transition: opacity 0.2s ease;
+}
+
+.workflow-content h3 {
+    margin: 0;
+
+    font-size: 17px;
+    font-weight: normal;
+
+    color: #292722;
+}
+
+.workflow-content p {
+    margin: 5px 0 0;
+
+    font-family: Arial, sans-serif;
+    font-size: 10px;
+    letter-spacing: 0.3px;
+
+    color: #777166;
+}
+
+.workflow-item:hover .workflow-content {
+    opacity: 0.65;
+}
+
+.workflow-item.active .workflow-content {
+    opacity: 1;
+}
+
+.workflow-item.active .workflow-number {
+    color: #292722;
+}
+
+.workflow-connector {
+    width: 1px;
+    height: 25px;
+
+    margin: 7px 0 7px 15px;
+
+    background: #aaa397;
+}
+
+
+/* -----------------------------------------
+   WORKFLOW EVIDENCE
+----------------------------------------- */
+
+.workflow-evidence {
+    width: min(760px, 100%);
+
+    margin-top: 42px;
+}
+
+.workflow-evidence-card {
+    display: none;
+
+    grid-template-columns: minmax(0, 1fr) minmax(280px, 420px);
+
+    gap: 28px;
+
+    padding-top: 24px;
+
+    border-top: 1px solid #aaa397;
+}
+
+.workflow-evidence-card.active {
+    display: grid;
+}
+
+.workflow-evidence-copy {
+    align-self: start;
+}
+
+.workflow-evidence-label {
+    margin-bottom: 8px;
+
+    font-family: Arial, sans-serif;
+    font-size: 8px;
+    letter-spacing: 1.7px;
+    text-transform: uppercase;
+
+    color: #777166;
+}
+
+.workflow-evidence-copy h3 {
+    margin: 0 0 12px;
+
+    font-size: 21px;
+    font-weight: normal;
+
+    color: #292722;
+}
+
+.workflow-evidence-copy p {
+    margin: 0;
+
+    font-size: 13px;
+    line-height: 1.65;
+
+    color: #4e4a42;
+}
+
+.workflow-evidence-image {
+    width: 100%;
+
+    border: 1px solid #aaa397;
+
+    background: #e8e3d8;
+
+    display: block;
+}
+
+.workflow-evidence-note {
+    margin-top: 8px;
+
+    font-family: Arial, sans-serif;
+    font-size: 8px;
+    letter-spacing: 0.5px;
+
+    color: #777166;
+}
+
+
+/* -----------------------------------------
+   MOBILE
+----------------------------------------- */
+
+@media (max-width: 700px) {
+
+    .workflow-evidence-card {
+        grid-template-columns: 1fr;
+    }
+
+    .workflow-evidence {
+        width: 100%;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+    <div id="masthead">
+        <h1>Johannesburg Property Chronicle</h1>
+
+        <div class="edition">
+            Digital City Edition · Johannesburg
+        </div>
+    </div>
+
+    <div id="mapStage">
+
+    <!-- CESIUM MAP -->
+    <div id="cesiumContainer"></div>
+
+
+    <!-- LOCATION SEARCH -->
+    <div id="locationSearch">
+        <input
+            type="text"
+            id="searchInput"
+            placeholder="Search Johannesburg..."
+        >
+
+        <button id="searchButton">
+            Search
+        </button>
+    </div>
+
+
+    <!-- HOW TO EXPLORE -->
+    <div id="navigationGuide">
+
+        <div class="guide-label">
+            How To Explore
+        </div>
+
+        <div class="guide-items">
+
+            <div class="guide-item">
+                <strong>Drag</strong> to move
+            </div>
+
+            <div class="guide-item">
+                <strong>Scroll</strong> to zoom
+            </div>
+
+            <div class="guide-item">
+                <strong>Click</strong> a building
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- MAP CONTROLS -->
+    <div id="mapControls">
+
+        <button id="zoomIn" title="Zoom in">
+            +
+        </button>
+
+        <button id="zoomOut" title="Zoom out">
+            −
+        </button>
+
+        <button id="tiltUp" title="Tilt up">
+            ▲
+        </button>
+
+        <button id="tiltDown" title="Tilt down">
+            ▼
+        </button>
+
+        <button id="resetView" title="Return to Johannesburg">
+            ⌂
+        </button>
+
+        <button id="fullscreenMap" title="Expand map">
+            ⛶
+        </button>
+
+    </div>
+
+
+    <!-- BUILDING INFORMATION -->
+<div id="buildingInfo">
+
+    <button id="closeBuildingInfo" title="Close">
+        ×
+    </button>
+
+    <div class="section-label">
+        Selected Property
+    </div>
+
+    <h2 id="buildingName">
+        Building Information
+    </h2>
+
+    <div class="property-details">
+
+        <p>
+            <span>Type</span>
+            <strong id="buildingType">—</strong>
+        </p>
+
+        <p>
+            <span>Height</span>
+            <strong id="buildingHeight">—</strong>
+        </p>
+
+        <p>
+            <span>Location</span>
+            <strong id="buildingLocation">—</strong>
+        </p>
+
+    </div>
+
+    <button id="propertyEnquiry">
+        Make an enquiry
+    </button>
+
+</div>
+
+<!-- PROPERTY ENQUIRY FORM -->
+<div id="enquiryForm">
+
+    <button id="closeEnquiryForm" title="Close">
+        ×
+    </button>
+
+    <div class="section-label">
+        Property Enquiry
+    </div>
+
+    <h2>
+        Make an enquiry
+    </h2>
+
+    <div class="enquiry-form-property">
+
+        <span>Selected Property</span>
+
+        <strong id="enquiryFormProperty">
+            —
+        </strong>
+
+    </div>
+
+    <textarea
+        id="enquiryText"
+        placeholder="What would you like to know about this property?"
+    ></textarea>
+
+    <button id="submitEnquiry">
+        Submit enquiry
+    </button>
+
+</div>
+
+
+<!-- ENQUIRY PROCESSING PANEL -->
+<div id="enquiryResult">
+
+    <button id="closeEnquiryResult" title="Close">
+        ×
+    </button>
+
+    <div class="section-label">
+        Enquiry Processed
+    </div>
+
+    <h2>
+        Lead Analysis
+    </h2>
+
+    <div class="enquiry-property">
+        <span>Selected Property</span>
+        <strong id="resultProperty">
+            —
+        </strong>
+    </div>
+
+    <div class="enquiry-rule"></div>
+
+    <div class="result-row">
+        <span>Intent</span>
+        <strong id="resultIntent">—</strong>
+    </div>
+
+    <div class="result-row">
+        <span>Lead Type</span>
+        <strong id="resultLeadType">—</strong>
+    </div>
+
+    <div class="result-row">
+        <span>Priority</span>
+        <strong id="resultPriority">—</strong>
+    </div>
+    <div class="result-row">
+    <span>CRM Status</span>
+    <strong id="resultCRMStatus">—</strong>
+</div>
+
+    <div class="result-next-action">
+
+        <div class="next-action-label">
+            Next Action
+        </div>
+
+        <p id="resultNextAction">
+            —
+        </p>
+
+    </div>
+
+    <button id="closeResultButton">
+        Close
+    </button>
+
+</div>
+
+<!-- NEWSPAPER NOTIFICATION -->
+<div id="notificationPanel">
+
+    <button id="closeNotification" title="Close">
+        ×
+    </button>
+
+    <div class="section-label" id="notificationLabel">
+        Notice
+    </div>
+
+    <h2 id="notificationTitle">
+        Information
+    </h2>
+
+    <p id="notificationMessage">
+        —
+    </p>
+
+    <button id="notificationButton">
+        Close
+    </button>
+
+</div>
+
+</div>
+
+
+
+<section id="workflowSection">
+
+    <canvas id="workflowParticles"></canvas>
+
+    <div class="workflow-heading">
+         <div>Real-Estate Operations Workflow</div>
+         <span>Select a workflow stage to view its implementation.</span>
+    </div>
+
+    <div class="workflow-list">
+
+        <div class="workflow-item active" data-stage="1">
+            <div class="workflow-number">01</div>
+
+            <div class="workflow-content">
+                <h3>Spatial Environment</h3>
+                <p>CesiumJS · 3D Johannesburg</p>
+            </div>
+        </div>
+
+        <div class="workflow-connector"></div>
+
+        <div class="workflow-item" data-stage="2">
+            <div class="workflow-number">02</div>
+
+            <div class="workflow-content">
+                <h3>User Interaction</h3>
+                <p>JavaScript · Search · Property Selection</p>
+            </div>
+        </div>
+
+        <div class="workflow-connector"></div>
+
+        <div class="workflow-item" data-stage="3">
+            <div class="workflow-number">03</div>
+
+            <div class="workflow-content">
+                <h3>Backend Automation</h3>
+                <p>Python · FastAPI</p>
+            </div>
+        </div>
+
+        <div class="workflow-connector"></div>
+
+        <div class="workflow-item" data-stage="4">
+            <div class="workflow-number">04</div>
+
+            <div class="workflow-content">
+                <h3>AI Intelligence</h3>
+                <p>Enquiry Classification · Lead Processing</p>
+            </div>
+        </div>
+
+        <div class="workflow-connector"></div>
+
+        <div class="workflow-item" data-stage="5">
+            <div class="workflow-number">05</div>
+
+            <div class="workflow-content">
+                <h3>CRM / Operations</h3>
+                <p>CRM-ready Lead · Lead Management</p>
+            </div>
+        </div>
+
+    </div>
+
+
+    <!-- WORKFLOW EVIDENCE -->
+
+    <div class="workflow-evidence">
+
+        <!-- STAGE 01 -->
+
+        <div
+            class="workflow-evidence-card active"
+            data-evidence="1"
+        >
+
+            <div class="workflow-evidence-copy">
+
+                <div class="workflow-evidence-label">
+                    Stage 01 · Spatial Environment
+                </div>
+
+                <h3>
+                    3D Johannesburg
+                </h3>
+
+                <p>
+                    A 3D spatial environment built with CesiumJS
+                    and Cesium ion provides the geographic
+                    foundation for the real-estate interface.
+                </p>
+
+            </div>
+
+            <div>
+
+                <img
+                    class="workflow-evidence-image"
+                    src="screenshots/stage-01-cesium.png"
+                    alt="CesiumJS 3D Johannesburg environment"
+                >
+
+                <div class="workflow-evidence-note">
+                    CesiumJS · Cesium ion · OSM 3D Buildings
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- STAGE 02 -->
+
+        <div
+            class="workflow-evidence-card"
+            data-evidence="2"
+        >
+
+            <div class="workflow-evidence-copy">
+
+                <div class="workflow-evidence-label">
+                    Stage 02 · User Interaction
+                </div>
+
+                <h3>
+                    Property Interaction
+                </h3>
+
+                <p>
+                    JavaScript connects the spatial environment
+                    to user actions, allowing locations to be
+                    searched and 3D buildings to be selected
+                    for property-related information.
+                </p>
+
+            </div>
+
+            <div>
+
+                <img
+                    class="workflow-evidence-image"
+                    src="screenshots/stage-02-interaction.png"
+                    alt="User interaction with the 3D property environment"
+                >
+
+                <div class="workflow-evidence-note">
+                    JavaScript · Search · Property Selection
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- STAGE 03 -->
+
+        <div
+            class="workflow-evidence-card"
+            data-evidence="3"
+        >
+
+            <div class="workflow-evidence-copy">
+
+                <div class="workflow-evidence-label">
+                    Stage 03 · Backend Automation
+                </div>
+
+                <h3>
+                    FastAPI Processing
+                </h3>
+
+                <p>
+                    Property enquiries are sent to a Python
+                    FastAPI backend, where the request is
+                    validated and processed through the
+                    automation workflow.
+                </p>
+
+            </div>
+
+            <div>
+
+                <img
+                    class="workflow-evidence-image"
+                    src="screenshots/stage-03-fastapi.png"
+                    alt="FastAPI documentation showing a processed property enquiry"
+                >
+
+                <div class="workflow-evidence-note">
+                    Python · FastAPI · Property Enquiry API
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- STAGE 04 -->
+
+        <div
+            class="workflow-evidence-card"
+            data-evidence="4"
+        >
+
+            <div class="workflow-evidence-copy">
+
+                <div class="workflow-evidence-label">
+                    Stage 04 · AI Intelligence
+                </div>
+
+                <h3>
+                    Enquiry Classification
+                </h3>
+
+                <p>
+                    A simulated AI layer analyses the enquiry
+                    and identifies its intent, lead type,
+                    priority and recommended next action.
+                </p>
+
+            </div>
+
+            <div>
+
+                <img
+                    class="workflow-evidence-image"
+                    src="screenshots/stage-04-ai-simulation.png"
+                    alt="Simulated AI intelligence result"
+                >
+
+                <div class="workflow-evidence-note">
+                    Simulated AI · Intent · Lead Classification
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- STAGE 05 -->
+
+        <div
+            class="workflow-evidence-card"
+            data-evidence="5"
+        >
+
+            <div class="workflow-evidence-copy">
+
+                <div class="workflow-evidence-label">
+                    Stage 05 · CRM / Operations
+                </div>
+
+                <h3>
+                    CRM-ready Lead
+                </h3>
+
+                <p>
+                    The processed enquiry is converted into a
+                    structured CRM-ready lead containing the
+                    property, classification, priority and
+                    recommended follow-up action.
+                </p>
+
+            </div>
+
+            <div>
+
+                <img
+                    class="workflow-evidence-image"
+                    src="screenshots/stage-05-crm.png"
+                    alt="CRM-ready lead processing result"
+                >
+
+                <div class="workflow-evidence-note">
+                    CRM-ready Lead · Lead Management
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</section>
+
+    <script type="module">
+
+        // Cesium setup
+        Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJub25jZSI6Ik5VSnNDekJYZlkzV0lQb1EiLCJqdGkiOiI1ZGEyODgzMi1hZDBmLTRmOGEtOTcyNC05Yjg1OTE3MmY0MmIiLCJpZCI6NTA4OTY0LCJzdWIiOiJOeWFtZSIsImlzcyI6Imh0dHBzOi8vYXBpLmNlc2l1bS5jb20iLCJhdWQiOiJKb2hhbm5lc2J1cmcgRGlnaXRhbCBUd2luIiwiaWF0IjoxNzkwNDU1NzAxfQ.cD7UWb6Px0I5fg-LHOvm62HjHTsEPT-7--LsK0J5k1c";
+
+
+        // Create the Cesium viewer
+        const viewer = new Cesium.Viewer("cesiumContainer", {
+    terrain: Cesium.Terrain.fromWorldTerrain(),
+     animation: false,
+
+    timeline: false,
+
+    baseLayerPicker: false,
+
+    geocoder: false,
+
+    homeButton: false,
+
+    sceneModePicker: false,
+
+    navigationHelpButton: false,
+
+    fullscreenButton: false,
+
+    infoBox: false,
+
+    selectionIndicator: false
+});
+viewer.scene.backgroundColor =
+    Cesium.Color.fromCssColorString("#e8e3d8");
+
+viewer.scene.globe.enableLighting = false;
+        // Load Cesium OSM Buildings
+        try {
+
+            const buildings = await Cesium.createOsmBuildingsAsync();
+            buildings.style = new Cesium.Cesium3DTileStyle({
+    color: "color('#d8d1c2')"
+});
+
+            viewer.scene.primitives.add(buildings);
+
+        } catch (error) {
+
+            console.error("Could not load 3D buildings:", error);
+
+        }
+
+        // Allow us to interact with the 3D buildings
+const handler = new Cesium.ScreenSpaceEventHandler(
+    viewer.scene.canvas
+);
+
+handler.setInputAction(function (movement) {
+
+    const picked = viewer.scene.pick(movement.position);
+
+    if (!Cesium.defined(picked)) {
+        return;
+    }
+
+    /*
+     * Cesium 3D Tiles features expose
+     * getPropertyIds() and getProperty().
+     */
+    if (typeof picked.getPropertyIds !== "function") {
+        console.log("Selected object is not a building feature.");
+        return;
+    }
+
+    console.log("Building selected!");
+
+    const propertyIds = picked.getPropertyIds();
+
+    console.log("Building properties:", propertyIds);
+
+    const properties = {};
+
+    propertyIds.forEach((propertyId) => {
+
+        const value = picked.getProperty(propertyId);
+
+        properties[propertyId] = value;
+
+        console.log(
+            propertyId + ":",
+            value
+        );
+
+    });
+
+
+    /*
+     * Try to find useful OSM building properties.
+     */
+
+    const name =
+        properties.name ||
+        properties["building:name"] ||
+        "Selected Building";
+
+    const type =
+        properties.building ||
+        properties.type ||
+        "Building";
+
+    const height =
+        properties.height ||
+        properties["building:height"] ||
+        "Not available";
+
+
+    /*
+     * Show building information panel.
+     */
+
+    document.getElementById("buildingName").textContent =
+        name;
+
+    document.getElementById("buildingType").textContent =
+        type;
+
+    document.getElementById("buildingHeight").textContent =
+        height;
+
+
+    /*
+     * We don't yet have an exact address
+     * from the Cesium building feature.
+     */
+
+    document.getElementById("buildingLocation").textContent =
+        "Johannesburg";
+
+
+    document.getElementById("buildingInfo").style.display =
+        "block";
+
+    document.getElementById("enquiryForm").style.display =
+    "none";
+
+document.getElementById("enquiryResult").style.display =
+    "none";
+
+
+}, Cesium.ScreenSpaceEventType.LEFT_CLICK);
+
+document.getElementById("closeBuildingInfo")
+    .addEventListener("click", () => {
+
+        document.getElementById("buildingInfo").style.display = "none";
+
+    });
+
+    document.getElementById("closeEnquiryResult")
+    .addEventListener("click", () => {
+
+        document.getElementById("enquiryResult").style.display =
+            "none";
+
+    });
+
+document.getElementById("closeResultButton")
+    .addEventListener("click", () => {
+
+        document.getElementById("enquiryResult").style.display =
+            "none";
+
+    });
+
+    function showNotification(title, message, label = "Notice") {
+
+    document.getElementById("notificationLabel").textContent =
+        label;
+
+    document.getElementById("notificationTitle").textContent =
+        title;
+
+    document.getElementById("notificationMessage").textContent =
+        message;
+
+    document.getElementById("notificationPanel").style.display =
+        "block";
+}
+
+function closeNotification() {
+
+    document.getElementById("notificationPanel").style.display =
+        "none";
+}
+
+document
+    .getElementById("closeNotification")
+    .addEventListener("click", closeNotification);
+
+document
+    .getElementById("notificationButton")
+    .addEventListener("click", closeNotification);
+
+// Open the newspaper-style enquiry form
+document
+    .getElementById("propertyEnquiry")
+    .addEventListener("click", () => {
+
+        const propertyName =
+            document.getElementById("buildingName").textContent;
+
+        document.getElementById(
+            "enquiryFormProperty"
+        ).textContent = propertyName;
+
+        document.getElementById(
+            "enquiryText"
+        ).value = "";
+
+        document.getElementById(
+            "buildingInfo"
+        ).style.display = "none";
+
+        document.getElementById(
+            "enquiryForm"
+        ).style.display = "block";
+    });
+
+
+// Close the enquiry form
+document
+    .getElementById("closeEnquiryForm")
+    .addEventListener("click", () => {
+
+        document.getElementById(
+            "enquiryForm"
+        ).style.display = "none";
+
+    });
+
+
+// Submit the enquiry
+document
+    .getElementById("submitEnquiry")
+    .addEventListener("click", async () => {
+
+        const enquiry =
+            document.getElementById(
+                "enquiryText"
+            ).value.trim();
+
+        if (!enquiry) {
+            return;
+        }
+
+        const propertyData = {
+
+            building_name:
+                document.getElementById(
+                    "buildingName"
+                ).textContent,
+
+            building_type:
+                document.getElementById(
+                    "buildingType"
+                ).textContent,
+
+            building_height:
+                document.getElementById(
+                    "buildingHeight"
+                ).textContent,
+
+            location:
+                document.getElementById(
+                    "buildingLocation"
+                ).textContent,
+
+            enquiry: enquiry
+        };
+
+        console.log(
+            "Sending enquiry:",
+            propertyData
+        );
+
+        try {
+
+            const response = await fetch(
+                "http://127.0.0.1:8000/property-enquiry",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(
+                            propertyData
+                        )
+                }
+            );
+
+            if (!response.ok) {
+                throw new Error(
+                    `Backend returned ${response.status}`
+                );
+            }
+
+            const result =
+                await response.json();
+
+            console.log(
+                "Backend response:",
+                result
+            );
+
+
+            // Populate Lead Analysis panel
+document.getElementById(
+                "resultProperty"
+            ).textContent =
+                result.property.building_name;
+
+document.getElementById(
+                "resultIntent"
+            ).textContent =
+                result.ai_processing.intent;
+
+document.getElementById("resultLeadType").textContent =
+    result.ai_processing.lead_type;
+
+document.getElementById("resultPriority").textContent =
+    result.ai_processing.priority;
+
+document.getElementById("resultCRMStatus").textContent =
+    result.crm_lead.status;
+
+document.getElementById(
+                "resultNextAction"
+            ).textContent =
+                result.ai_processing.next_action;
+
+
+            // Hide enquiry form
+document.getElementById(
+                "enquiryForm"
+            ).style.display = "none";
+
+
+            // Show processed result
+document.getElementById(
+                "enquiryResult"
+            ).style.display = "block";
+
+
+        } catch (error) {
+
+            console.error(
+                "Could not connect to backend:",
+                error
+            );
+
+            showNotification(
+                "Connection Unavailable",
+                "The backend could not be reached. Please make sure the FastAPI server is running.",
+                "System Notice"
+            );
+
+        }
+
+    });
+
+
+    const johannesburgView = {
+    destination: Cesium.Cartesian3.fromDegrees(
+        28.0473,
+        -26.2041,
+        3000
+    ),
+
+    orientation: {
+        heading: Cesium.Math.toRadians(0),
+        pitch: Cesium.Math.toRadians(-45),
+        roll: 0
+    }
+};
+        // Fly to Johannesburg
+viewer.camera.flyTo(johannesburgView);
+
+        document.getElementById("zoomIn").addEventListener("click", () => {
+    viewer.camera.zoomIn(500);
+});
+
+document.getElementById("zoomOut").addEventListener("click", () => {
+    viewer.camera.zoomOut(500);
+});
+
+document.getElementById("tiltUp").addEventListener("click", () => {
+    viewer.camera.lookUp(Cesium.Math.toRadians(10));
+});
+
+document.getElementById("tiltDown").addEventListener("click", () => {
+    viewer.camera.lookDown(Cesium.Math.toRadians(10));
+});
+
+document.getElementById("resetView").addEventListener("click", () => {
+    viewer.camera.flyTo(johannesburgView);
+});
+
+const locations = {
+    "johannesburg": {
+        longitude: 28.0473,
+        latitude: -26.2041
+    },
+
+    "sandton": {
+        longitude: 28.0567,
+        latitude: -26.1076
+    },
+
+    "rosebank": {
+        longitude: 28.0370,
+        latitude: -26.1466
+    },
+
+    "midrand": {
+        longitude: 28.1410,
+        latitude: -25.9895
+    },
+
+    "fourways": {
+        longitude: 28.0120,
+        latitude: -26.0225
+    },
+
+    "johannesburg cbd": {
+        longitude: 28.0473,
+        latitude: -26.2041
+    }
+};
+function searchLocation() {
+    const input = document
+        .getElementById("searchInput")
+        .value
+        .trim()
+        .toLowerCase();
+
+    if (!input) {
+        return;
+    }
+
+    const location = locations[input];
+
+    if (!location) {
+showNotification(
+    "Location Not Available",
+    "This location is not available at the moment, but additional locations will be available upon request. This is just a demonstration. Try Sandton, Rosebank, Midrand, Fourways or Johannesburg.",
+    "Search Notice"
+);
+    return;
+}
+
+    viewer.camera.flyTo({
+        destination: Cesium.Cartesian3.fromDegrees(
+            location.longitude,
+            location.latitude,
+            1500
+        ),
+        orientation: {
+            heading: Cesium.Math.toRadians(0),
+            pitch: Cesium.Math.toRadians(-25),
+            roll: 0
+        },
+        duration: 2
+    });
+}document.getElementById("searchButton").addEventListener(
+    "click",
+    searchLocation
+);document.getElementById("searchInput").addEventListener(
+    "keydown",
+    function (event) {
+        if (event.key === "Enter") {
+            searchLocation();
+        }
+    }
+);
+const fullscreenButton =
+    document.getElementById("fullscreenMap");
+
+const mapStage =
+    document.getElementById("mapStage");
+
+
+fullscreenButton.addEventListener("click", async () => {
+
+    try {
+
+        if (document.fullscreenElement !== mapStage) {
+
+            await mapStage.requestFullscreen();
+
+        } else {
+
+            await document.exitFullscreen();
+
+        }
+
+    } catch (error) {
+
+        console.error("Fullscreen error:", error);
+
+    }
+
+});
+
+
+document.addEventListener("fullscreenchange", () => {
+
+    if (document.fullscreenElement === mapStage) {
+
+        fullscreenButton.textContent = "×";
+        fullscreenButton.title = "Exit fullscreen";
+
+    } else {
+
+        fullscreenButton.textContent = "⛶";
+        fullscreenButton.title = "Expand map";
+
+    }
+
+});
+
+/* =========================================
+   WORKFLOW PARTICLE + DATA FLOW ANIMATION
+========================================= */
+
+const particleCanvas =
+    document.getElementById("workflowParticles");
+
+const particleContext =
+    particleCanvas.getContext("2d");
+
+const workflowSection =
+    document.getElementById("workflowSection");
+
+const workflowItems =
+    Array.from(
+        document.querySelectorAll(".workflow-item")
+    );
+
+let backgroundParticles = [];
+let workflowPackets = [];
+let workflowAnimationFrame;
+
+
+/* -----------------------------------------
+   CANVAS
+----------------------------------------- */
+
+function resizeWorkflowCanvas() {
+
+    const width =
+        workflowSection.clientWidth;
+
+    const height =
+        workflowSection.clientHeight;
+
+    const ratio =
+        Math.min(
+            window.devicePixelRatio || 1,
+            2
+        );
+
+    particleCanvas.width =
+        width * ratio;
+
+    particleCanvas.height =
+        height * ratio;
+
+    particleCanvas.style.width =
+        `${width}px`;
+
+    particleCanvas.style.height =
+        `${height}px`;
+
+    particleContext.setTransform(
+        ratio,
+        0,
+        0,
+        ratio,
+        0,
+        0
+    );
+
+    createBackgroundParticles(
+        width,
+        height
+    );
+
+    createWorkflowPackets();
+}
+
+
+/* -----------------------------------------
+   BACKGROUND PARTICLES
+----------------------------------------- */
+
+function createBackgroundParticles(
+    width,
+    height
+) {
+
+    backgroundParticles = [];
+
+    const count =
+        Math.min(
+            55,
+            Math.max(
+                30,
+                Math.floor(width / 24)
+            )
+        );
+
+    for (
+        let i = 0;
+        i < count;
+        i++
+    ) {
+
+        backgroundParticles.push({
+
+            x:
+                Math.random() * width,
+
+            y:
+                Math.random() * height,
+
+            radius:
+                Math.random() * 1.7 + 0.7,
+
+            vx:
+                (Math.random() - 0.5) * 0.35,
+
+            vy:
+                (Math.random() - 0.5) * 0.35,
+
+            opacity:
+                Math.random() * 0.28 + 0.22,
+
+            pulse:
+                Math.random() *
+                Math.PI *
+                2
+        });
+    }
+}
+
+
+/* -----------------------------------------
+   MOVE BACKGROUND PARTICLES
+----------------------------------------- */
+
+function updateBackgroundParticles(
+    width,
+    height
+) {
+
+    backgroundParticles.forEach(
+        (particle) => {
+
+            particle.x +=
+                particle.vx;
+
+            particle.y +=
+                particle.vy;
+
+            particle.pulse +=
+                0.025;
+
+
+            /*
+             * Wrap particles around
+             * the workflow section.
+             */
+
+            if (particle.x < -10) {
+                particle.x =
+                    width + 10;
+            }
+
+            if (particle.x > width + 10) {
+                particle.x = -10;
+            }
+
+            if (particle.y < -10) {
+                particle.y =
+                    height + 10;
+            }
+
+            if (particle.y > height + 10) {
+                particle.y = -10;
+            }
+        }
+    );
+}
+
+
+/* -----------------------------------------
+   DRAW BACKGROUND CONNECTIONS
+----------------------------------------- */
+
+function drawBackgroundConnections() {
+
+    const connectionDistance = 135;
+
+    for (
+        let i = 0;
+        i < backgroundParticles.length;
+        i++
+    ) {
+
+        const first =
+            backgroundParticles[i];
+
+        for (
+            let j = i + 1;
+            j < backgroundParticles.length;
+            j++
+        ) {
+
+            const second =
+                backgroundParticles[j];
+
+            const dx =
+                first.x -
+                second.x;
+
+            const dy =
+                first.y -
+                second.y;
+
+            const distance =
+                Math.sqrt(
+                    dx * dx +
+                    dy * dy
+                );
+
+            if (
+                distance <
+                connectionDistance
+            ) {
+
+                const opacity =
+                    (1 -
+                        distance /
+                        connectionDistance) *
+                    0.22;
+
+                particleContext.beginPath();
+
+                particleContext.moveTo(
+                    first.x,
+                    first.y
+                );
+
+                particleContext.lineTo(
+                    second.x,
+                    second.y
+                );
+
+                particleContext.strokeStyle =
+                    `rgba(73, 69, 59, ${opacity})`;
+
+                particleContext.lineWidth =
+                    0.7;
+
+                particleContext.stroke();
+            }
+        }
+    }
+}
+
+
+/* -----------------------------------------
+   DRAW BACKGROUND PARTICLES
+----------------------------------------- */
+
+function drawBackgroundParticles() {
+
+    backgroundParticles.forEach(
+        (particle) => {
+
+            const pulse =
+                Math.sin(
+                    particle.pulse
+                ) * 0.5 + 0.5;
+
+            const opacity =
+                particle.opacity +
+                pulse * 0.12;
+
+            /*
+             * Outer subtle pulse
+             */
+
+            particleContext.beginPath();
+
+            particleContext.arc(
+                particle.x,
+                particle.y,
+                particle.radius + 2,
+                0,
+                Math.PI * 2
+            );
+
+            particleContext.fillStyle =
+                `rgba(73, 69, 59, ${opacity * 0.16})`;
+
+            particleContext.fill();
+
+
+            /*
+             * Visible particle
+             */
+
+            particleContext.beginPath();
+
+            particleContext.arc(
+                particle.x,
+                particle.y,
+                particle.radius,
+                0,
+                Math.PI * 2
+            );
+
+            particleContext.fillStyle =
+                `rgba(73, 69, 59, ${opacity})`;
+
+            particleContext.fill();
+        }
+    );
+}
+
+
+/* -----------------------------------------
+   WORKFLOW POSITIONS
+----------------------------------------- */
+
+function getWorkflowPositions() {
+
+    const sectionRect =
+        workflowSection.getBoundingClientRect();
+
+    return workflowItems.map(
+        (item) => {
+
+            const rect =
+                item.getBoundingClientRect();
+
+            return {
+
+                x:
+                    rect.left -
+                    sectionRect.left +
+                    15,
+
+                y:
+                    rect.top -
+                    sectionRect.top +
+                    rect.height / 2
+            };
+        }
+    );
+}
+
+
+/* -----------------------------------------
+   CREATE WORKFLOW PACKETS
+----------------------------------------- */
+
+function createWorkflowPackets() {
+
+    workflowPackets = [];
+
+    /*
+     * Eight visible data packets.
+     */
+
+    for (
+        let i = 0;
+        i < 8;
+        i++
+    ) {
+
+        workflowPackets.push({
+
+            position:
+                i / 8,
+
+            speed:
+                0.0035,
+
+            radius:
+                3.5
+        });
+    }
+}
+
+
+/* -----------------------------------------
+   DRAW WORKFLOW PATH
+----------------------------------------- */
+
+function drawWorkflowPath() {
+
+    const positions =
+        getWorkflowPositions();
+
+    if (positions.length < 2) {
+        return;
+    }
+
+    particleContext.beginPath();
+
+    particleContext.moveTo(
+        positions[0].x,
+        positions[0].y
+    );
+
+    for (
+        let i = 1;
+        i < positions.length;
+        i++
+    ) {
+
+        particleContext.lineTo(
+            positions[i].x,
+            positions[i].y
+        );
+    }
+
+    particleContext.strokeStyle =
+        "rgba(45, 42, 36, 0.30)";
+
+    particleContext.lineWidth =
+        1.5;
+
+    particleContext.stroke();
+}
+
+
+/* -----------------------------------------
+   DRAW WORKFLOW NODES
+----------------------------------------- */
+
+function drawWorkflowNodes() {
+
+    const positions =
+        getWorkflowPositions();
+
+    positions.forEach(
+        (position) => {
+
+            /*
+             * Outer ring
+             */
+
+            particleContext.beginPath();
+
+            particleContext.arc(
+                position.x,
+                position.y,
+                5,
+                0,
+                Math.PI * 2
+            );
+
+            particleContext.strokeStyle =
+                "rgba(45, 42, 36, 0.48)";
+
+            particleContext.lineWidth =
+                1;
+
+            particleContext.stroke();
+
+
+            /*
+             * Centre
+             */
+
+            particleContext.beginPath();
+
+            particleContext.arc(
+                position.x,
+                position.y,
+                2.5,
+                0,
+                Math.PI * 2
+            );
+
+            particleContext.fillStyle =
+                "rgba(35, 32, 27, 0.90)";
+
+            particleContext.fill();
+        }
+    );
+}
+
+
+/* -----------------------------------------
+   DRAW MOVING WORKFLOW PACKETS
+----------------------------------------- */
+
+function drawWorkflowPackets() {
+
+    const positions =
+        getWorkflowPositions();
+
+    if (positions.length < 2) {
+        return;
+    }
+
+    workflowPackets.forEach(
+        (packet) => {
+
+            packet.position +=
+                packet.speed;
+
+            /*
+             * Restart at stage 01
+             */
+
+            if (packet.position >= 1) {
+
+                packet.position = 0;
+            }
+
+
+            /*
+             * Convert the complete
+             * workflow into segments.
+             */
+
+            const segmentCount =
+                positions.length - 1;
+
+            const scaledPosition =
+                packet.position *
+                segmentCount;
+
+            const segment =
+                Math.min(
+                    Math.floor(
+                        scaledPosition
+                    ),
+                    segmentCount - 1
+                );
+
+            const progress =
+                scaledPosition -
+                segment;
+
+            const start =
+                positions[segment];
+
+            const end =
+                positions[segment + 1];
+
+
+            const x =
+                start.x +
+                (end.x - start.x) *
+                progress;
+
+            const y =
+                start.y +
+                (end.y - start.y) *
+                progress;
+
+
+            /*
+             * Particle trail
+             */
+
+            particleContext.beginPath();
+
+            particleContext.moveTo(
+                x,
+                y
+            );
+
+            particleContext.lineTo(
+                start.x,
+                start.y
+            );
+
+            particleContext.strokeStyle =
+                "rgba(45, 42, 36, 0.40)";
+
+            particleContext.lineWidth =
+                2;
+
+            particleContext.stroke();
+
+
+            /*
+             * Outer pulse
+             */
+
+            particleContext.beginPath();
+
+            particleContext.arc(
+                x,
+                y,
+                10,
+                0,
+                Math.PI * 2
+            );
+
+            particleContext.fillStyle =
+                "rgba(45, 42, 36, 0.10)";
+
+            particleContext.fill();
+
+
+            /*
+             * Main packet
+             */
+
+            particleContext.beginPath();
+
+            particleContext.arc(
+                x,
+                y,
+                packet.radius,
+                0,
+                Math.PI * 2
+            );
+
+            particleContext.fillStyle =
+                "rgba(30, 28, 24, 0.98)";
+
+            particleContext.fill();
+
+
+            /*
+             * Small highlight
+             */
+
+            particleContext.beginPath();
+
+            particleContext.arc(
+                x,
+                y,
+                1.3,
+                0,
+                Math.PI * 2
+            );
+
+            particleContext.fillStyle =
+                "rgba(255, 255, 255, 0.75)";
+
+            particleContext.fill();
+        }
+    );
+}
+
+
+/* -----------------------------------------
+   ANIMATION LOOP
+----------------------------------------- */
+
+function animateWorkflow() {
+
+    const width =
+        workflowSection.clientWidth;
+
+    const height =
+        workflowSection.clientHeight;
+
+
+    particleContext.clearRect(
+        0,
+        0,
+        width,
+        height
+    );
+
+
+    /*
+     * BACKGROUND LAYER
+     */
+
+    updateBackgroundParticles(
+        width,
+        height
+    );
+
+    drawBackgroundConnections();
+
+    drawBackgroundParticles();
+
+
+    /*
+     * WORKFLOW LAYER
+     */
+
+    drawWorkflowPath();
+
+    drawWorkflowNodes();
+
+    drawWorkflowPackets();
+
+
+    workflowAnimationFrame =
+        requestAnimationFrame(
+            animateWorkflow
+        );
+}
+
+
+/* -----------------------------------------
+   START
+----------------------------------------- */
+
+resizeWorkflowCanvas();
+
+animateWorkflow();
+
+
+window.addEventListener(
+    "resize",
+    resizeWorkflowCanvas
+);
+
+/* =========================================
+   WORKFLOW EVIDENCE SELECTION
+========================================= */
+
+const workflowStageItems =
+    Array.from(
+        document.querySelectorAll(".workflow-item")
+    );
+
+const workflowEvidenceCards =
+    Array.from(
+        document.querySelectorAll(".workflow-evidence-card")
+    );
+
+workflowStageItems.forEach((item) => {
+
+    item.addEventListener("click", () => {
+
+        const stage =
+            item.dataset.stage;
+
+        workflowStageItems.forEach((stageItem) => {
+
+            stageItem.classList.toggle(
+                "active",
+                stageItem === item
+            );
+
+        });
+
+        workflowEvidenceCards.forEach((card) => {
+
+            card.classList.toggle(
+                "active",
+                card.dataset.evidence === stage
+            );
+
+        });
+
+    });
+
+});
+</script>
+
+</body>
+</html>
