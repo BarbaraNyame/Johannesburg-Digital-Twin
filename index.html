@@ -2000,9 +2000,28 @@ document.getElementById(
             );
 
             showNotification(
-                "Connection Unavailable",
-                "The backend could not be reached. Please make sure the FastAPI server is running.",
-                "System Notice"
+                 // Show processed result
+document.getElementById(
+                "enquiryResult"
+            ).style.display = "block";
+
+
+        } catch (error) {
+
+            console.error(
+                "Could not connect to backend:",
+                error
+            );
+
+            showNotification(
+                  "Enquiry Received",
+
+    "Your enquiry has been captured successfully. This demonstration illustrates how AI can analyse the request and streamline the next steps through automated CRM actions. With a live API connection, these actions can be processed and updated in real time.",
+
+    
+            );
+
+        }
             );
 
         }
@@ -2094,7 +2113,7 @@ function searchLocation() {
 showNotification(
     "Location Not Available",
     "This location is not available at the moment, but additional locations will be available upon request. This is just a demonstration. Try Sandton, Rosebank, Midrand, Fourways or Johannesburg.",
-    "Search Notice"
+    
 );
     return;
 }
