@@ -1568,9 +1568,11 @@ body {
                 </h3>
 
                 <p>
-                    A simulated AI layer analyses the enquiry
-                    and identifies its intent, lead type,
-                    priority and recommended next action.
+                    <p>
+    An AI processing layer analyses the enquiry
+    and identifies its intent, lead type,
+    priority and recommended next action.
+</p>
                 </p>
 
             </div>
@@ -1671,6 +1673,20 @@ viewer.scene.backgroundColor =
     Cesium.Color.fromCssColorString("#e8e3d8");
 
 viewer.scene.globe.enableLighting = false;
+
+const johannesburgView = {
+    destination: Cesium.Cartesian3.fromDegrees(
+        28.0473,
+        -26.2041,
+        12000
+    ),
+    orientation: {
+        heading: Cesium.Math.toRadians(0),
+        pitch: Cesium.Math.toRadians(-35),
+        roll: 0
+    },
+    duration: 2
+};
         // Load Cesium OSM Buildings
         try {
 
@@ -1876,7 +1892,9 @@ document
     });
 
 
-// Submit the enquiry
+
+
+    // Submit the enquiry
 document
     .getElementById("submitEnquiry")
     .addEventListener("click", async () => {
@@ -1953,95 +1971,70 @@ document
                 result
             );
 
-
-            // Populate Lead Analysis panel
+// Populate Lead Analysis panel
 document.getElementById(
-                "resultProperty"
-            ).textContent =
-                result.property.building_name;
+    "resultProperty"
+).textContent =
+    result.property.building_name;
 
 document.getElementById(
-                "resultIntent"
-            ).textContent =
-                result.ai_processing.intent;
+    "resultIntent"
+).textContent =
+    result.ai_processing.intent;
 
-document.getElementById("resultLeadType").textContent =
+document.getElementById(
+    "resultLeadType"
+).textContent =
     result.ai_processing.lead_type;
 
-document.getElementById("resultPriority").textContent =
+document.getElementById(
+    "resultPriority"
+).textContent =
     result.ai_processing.priority;
 
-document.getElementById("resultCRMStatus").textContent =
+document.getElementById(
+    "resultCRMStatus"
+).textContent =
     result.crm_lead.status;
 
 document.getElementById(
-                "resultNextAction"
-            ).textContent =
-                result.ai_processing.next_action;
+    "resultNextAction"
+).textContent =
+    result.ai_processing.next_action;
 
 
-            // Hide enquiry form
+// Hide enquiry form
 document.getElementById(
-                "enquiryForm"
-            ).style.display = "none";
+    "enquiryForm"
+).style.display = "none";
 
 
-            // Show processed result
+// Show processed result
 document.getElementById(
-                "enquiryResult"
-            ).style.display = "block";
+    "enquiryResult"
+).style.display = "block";
 
 
-        } catch (error) {
+} catch (error) {
 
-            console.error(
-                "Could not connect to backend:",
-                error
-            );
+    console.error(
+        "Could not connect to backend:",
+        error
+    );
 
-            showNotification(
-                 // Show processed result
-document.getElementById(
-                "enquiryResult"
-            ).style.display = "block";
+    document.getElementById(
+        "enquiryForm"
+    ).style.display = "none";
 
+    showNotification(
+        "Processing Notice",
+        "The enquiry could not be processed by the backend at the moment. The demonstration interface remains available to illustrate how the workflow operates when the connection is active.",
+        "System Notice"
+    );
 
-        } catch (error) {
+}
 
-            console.error(
-                "Could not connect to backend:",
-                error
-            );
-
-            showNotification(
-                  "Enquiry Received",
-
-    "Your enquiry has been captured successfully. This demonstration illustrates how AI can analyse the request and streamline the next steps through automated CRM actions. With a live API connection, these actions can be processed and updated in real time.",
-
-    
-            );
-
-        }
-            );
-
-        }
-
-    });
-
-
-    const johannesburgView = {
-    destination: Cesium.Cartesian3.fromDegrees(
-        28.0473,
-        -26.2041,
-        3000
-    ),
-
-    orientation: {
-        heading: Cesium.Math.toRadians(0),
-        pitch: Cesium.Math.toRadians(-45),
-        roll: 0
-    }
-};
+});
         // Fly to Johannesburg
 viewer.camera.flyTo(johannesburgView);
 
